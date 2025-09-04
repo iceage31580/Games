@@ -1,0 +1,57 @@
+#pygame module to be used
+import pygame
+#starts pygame
+pygame.init()
+
+#windows function open window to play game in
+#width and height of game
+win = pygame.display.set_mode((800, 600))
+
+#We want to give our program a proper name
+pygame.display.set_caption('First Game')
+
+#Character needs to have a width and a height
+#character needs a velocity
+#needs to fit inside window
+x = 50
+y = 50
+width = 40
+height = 60
+vel = 5
+
+#All Pygames have a main loop
+#Delay to keep window closed
+#event checks for events
+#pygame.quit is the red x button
+run = True
+while run:
+    pygame.time.delay(100)
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+
+#keys will allow movement
+#0,0 is top left
+    keys = pygame.key.get_pressed()
+
+    if keys[pygame.K_LEFT]:
+        x -= vel
+    if keys[pygame.K_RIGHT]:
+        x += vel
+    if keys[pygame.K_UP]:
+        y -= vel
+    if keys[pygame.K_DOWN]:
+        y += vel
+
+#this allows for the black to be replaced after the square moves
+win.fill((0, 0, 0))
+
+#drawing a rectange, color is green, win is for inside window
+#rectangle won't show unless you refresh or update
+    pygame.draw.rect(win, (255, 0, 0), (x, y, width, height))
+    pygame.display.update()
+
+
+
+pygame.quit()
