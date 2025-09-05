@@ -1,0 +1,80 @@
+#pygame module to be used
+import pygame
+#starts pygame
+pygame.init()
+
+#windows function open window to play game in
+#width and height of game
+win = pygame.display.set_mode((500, 500))
+
+#We want to give our program a proper name
+pygame.display.set_caption('First Game')
+
+#screenWidth = 500
+
+#Character needs to have a width and a height
+#character needs a velocity
+#needs to fit inside window
+x = 50
+y = 440
+width = 40
+height = 60
+vel = 10
+
+#jumpcode
+isJump = False
+jumpCount = 10
+
+#All Pygames have a main loop
+#Delay to keep window closed
+#event checks for events
+#pygame.quit is the red x button
+run = True
+while run:
+    pygame.time.delay(100)
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+
+#keys will allow movement
+#0,0 is top left
+    keys = pygame.key.get_pressed()
+
+    #adding "and" statements to constrict square
+    if keys[pygame.K_LEFT] and x > vel:
+        x -= vel
+    #I can use a global variable for Screen Width to put here. I'll comment in a global variable
+    if keys[pygame.K_RIGHT] and x < 500 - width - vel:
+        x += vel
+
+    if not(isJump):
+        if keys[pygame.K_UP] and y > vel:
+            y -= vel
+        if keys[pygame.K_DOWN] and y < 500 - height - vel:
+            y += vel
+    #will be adding code to use space for jumping
+    #uses math y = mx + b
+        if keys[pygame.K_SPACE]:
+            isJump = True
+    else:
+        if jumpCount >= -10:
+            neg = 1 # first part of jump nothing is going on
+            if jumpCount < 0:
+                neg = -1 # this is declared so we can multiply it after the jump to bring it down
+            y -= (jumpCount ** 2) * 0.5 * neg
+            jumpCount -= 1
+            #this moves character up, now we gotta make character come down
+        else:
+            isJump = False
+            jumpCount = 10
+
+#this allows for the black to be replaced after the square moves
+    win.fill((0, 0, 0))
+
+#drawing a rectangle, color is green, win is for inside window
+#rectangle won't show unless you refresh or update
+    pygame.draw.rect(win, (255, 0, 0), (x, y, width, height))
+    pygame.display.update()
+
+pygame.quit()
