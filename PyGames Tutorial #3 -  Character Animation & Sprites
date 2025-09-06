@@ -1,0 +1,140 @@
+#pygame module to be used
+import pygame
+#starts pygame
+pygame.init()
+
+#windows function open window to play game in
+#width and height of game
+win = pygame.display.set_mode((1000, 1000))
+
+#We want to give our program a proper name
+pygame.display.set_caption('First Game')
+
+#screenWidth = 500
+
+#pygame.path.join for using other folders
+walkRight = [pygame.image.load('R1.png'), pygame.image.load('R2.png'), pygame.image.load('R3.png'), pygame.image.load('R4.png')]
+walkLeft = [pygame.image.load('L1.png'), pygame.image.load('L2.png'), pygame.image.load('L3.png'), pygame.image.load('L4.png')]
+bg = pygame.image.load(r'C:\Users\Isaac\PyCharmMiscProject\bg.png')
+char = pygame.image.load('standing.png')
+
+clock = pygame.time.Clock()
+
+#Character needs to have a width and a height
+#character needs a velocity
+#needs to fit inside window
+x = 50
+y = 440
+width = 64
+height = 64
+vel = 10
+left = False
+right = False
+walkCount = 0
+#jumpcode
+isJump = False
+jumpCount = 10
+
+def redraw_game_window() :
+
+    global walkCount
+
+    #win.fill((0, 0, 0))
+    win.blit(bg, (0, 0))
+    #pygame.draw.rect(win, (255, 0, 0), (x, y, width, height))
+    if  walkCount + 1 >= 27:
+        walkCount = 0
+    if left:
+        win.blit(walkLeft[walkCount//3], (x,y))
+        walkCount += 1
+    elif right:
+        win.blit(walkRight[walkCount//3],(x,y))
+        walkCount += 1
+    else:
+        win.blit(char, (x, y))
+
+    pygame.display.update()
+
+
+#main loop
+
+#All Pygames have a main loop
+#Delay to keep window closed
+#event checks for events
+#pygame.quit is the red x button
+run = True
+while run:
+    #pygame.time.delay(27) #framerate
+    clock.tick(27)
+    redraw_game_window()
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+
+#keys will allow movement
+#0,0 is top left
+    keys = pygame.key.get_pressed()
+
+    #adding "and" statements to constrict square
+    if keys[pygame.K_LEFT] and x > vel:
+        x -= vel
+        left = True
+        right = False#stablize character
+    #I can use a global variable for Screen Width to put here. I'll comment in a global variable
+    #from if to elif so I can add an else
+    elif keys[pygame.K_RIGHT] and x < 500 - width - vel:
+        x += vel
+        right = True
+        left = False
+    else:
+        right = False
+        left = False
+        walkCount =0
+
+
+    if not(isJump):
+        #if keys[pygame.K_UP] and y > vel:
+            #y -= vel
+        #if keys[pygame.K_DOWN] and y < 500 - height - vel:
+            #y += vel
+    #will be adding code to use space for jumping
+    #uses math y = mx + b
+        if keys[pygame.K_SPACE]:
+            isJump = True
+            right = False
+            left = False
+            walkCount = 0
+    else:
+        if jumpCount >= -10:
+            neg = 1 # first part of jump nothing is going on
+            if jumpCount < 0:
+                neg = -1 # this is declared so we can multiply it after the jump to bring it down
+            y -= (jumpCount ** 2) * 0.5 * neg
+            jumpCount -= 1
+            #this moves character up, now we gotta make character come down
+        else:
+            isJump = False
+            jumpCount = 10
+
+
+
+pygame.quit()
+
+
+##notes from Character Animation Sprite
+
+##For people who have custom sprites I suggest this at the beginning of the file:
+##from pygame import image as img
+##Then instead of
+##walk_right = [pygame.image.load("Custom sprite.png")]
+##It's
+##walk_right = [img.load("Custom sprite.png")]"
+
+##just for anyone having trouble with the images if you are storing the image in the same folder as the python program
+##I created a variable for  directory path using
+##folder = os.path.dirname(__file__)
+##and then
+##pygame.image.load(os.path.join(folder,'bg.png'))
+##also dont forget to import the os module
+##I was having trouble with this as well so hope this helps
