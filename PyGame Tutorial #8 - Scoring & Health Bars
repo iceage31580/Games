@@ -1,0 +1,228 @@
+# pygame module to be used
+import pygame
+import os
+
+pygame.init()
+
+# --- window / globals ---
+WIDTH, HEIGHT = 1000, 1000
+win = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption('First Game')
+clock = pygame.time.Clock()
+
+score = 0
+
+# --- assets ---
+# Tip: prefer relative paths so it runs anywhere:
+# ASSETS = os.path.dirname(__file__)
+# bg = pygame.image.load(os.path.join(ASSETS, 'bg.png'))
+walkRight = [pygame.image.load('R1.png'), pygame.image.load('R2.png'), pygame.image.load('R3.png'), pygame.image.load('R4.png')]
+walkLeft  = [pygame.image.load('L1.png'), pygame.image.load('L2.png'), pygame.image.load('L3.png'), pygame.image.load('L4.png')]
+bg  = pygame.image.load(r'C:\Users\Isaac\PyCharmMiscProject\bg.png')  # replace with relative path if possible
+char = pygame.image.load('standing.png')
+
+class player(object):
+    def __init__(self, x, y, width, height):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.vel = 5
+        self.isJump = False
+        self.jumpCount = 10
+        self.left = False
+        self.right = False
+        self.walkCount = 0
+        self.standing = True
+        self.hitbox = (self.x + 17, self.y + 11, 29, 52)
+
+    def draw(self, win):
+        # 4 frames * 3 ticks = 12
+        if self.walkCount + 1 >= 12:
+            self.walkCount = 0
+
+        if not self.standing:
+            if self.left:
+                win.blit(walkLeft[self.walkCount // 3], (self.x, self.y))
+                self.walkCount += 1
+            elif self.right:
+                win.blit(walkRight[self.walkCount // 3], (self.x, self.y))
+                self.walkCount += 1
+        else:
+            # idle faces last direction
+            if self.right:
+                win.blit(walkRight[0], (self.x, self.y))
+            elif self.left:
+                win.blit(walkLeft[0], (self.x, self.y))
+            else:
+                win.blit(char, (self.x, self.y))
+
+        # update hitbox and (optionally) draw outline
+        self.hitbox = (self.x + 17, self.y + 11, 29, 52)
+        # Debug: show hitbox (outline only)
+        # pygame.draw.rect(win, (255,255,255), self.hitbox, 2)
+
+class projectile(object):
+    def __init__(self, x, y, radius, color, facing):
+        self.x = x
+        self.y = y
+        self.radius = radius
+        self.color = color
+        self.facing = facing
+        self.vel = 8 * facing  # signed velocity
+
+    def draw(self, win):
+        pygame.draw.circle(win, self.color, (self.x, self.y), self.radius)
+
+class enemy(object):
+    walkRight = [pygame.image.load('R1E.png'), pygame.image.load('R2E.png'), pygame.image.load('R3E.png'), pygame.image.load('R4E.png')]
+    walkLeft  = [pygame.image.load('L1E.png'), pygame.image.load('L2E.png'), pygame.image.load('L3E.png'), pygame.image.load('L4E.png')]
+
+    def __init__(self, x, y, width, height, end):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.end = end
+        self.path = [self.x, self.end]
+        self.walkCount = 0
+        self.vel = 3
+        self.hitbox = (self.x + 17, self.y + 2, 31, 57)
+        self.health = 10
+        self.visible = True
+
+    def draw(self, win):
+        self.move()
+        # 4 frames * ~4 ticks = 16 (use 3 if you want faster)
+        if self.visible:
+
+            if self.walkCount + 1 >= 12:
+                self.walkCount = 0
+
+            if self.vel > 0:
+                win.blit(self.walkRight[self.walkCount // 3], (self.x, self.y))
+            else:
+                win.blit(self.walkLeft[self.walkCount // 3], (self.x, self.y))
+            self.walkCount += 1
+
+            pygame.draw.rect(win,(255,0,0),(self.hitbox[0], self.hitbox[1] -20, 50, 10))
+            pygame.draw.rect(win, (0,128, 0), (self.hitbox[0], self.hitbox[1] - 20, 50 - (5 * (10-self.health)), 10))
+            self.hitbox = (self.x + 17, self.y + 2, 31, 57)
+            # Debug hitbox:
+            # pygame.draw.rect(win, (255,255,255), self.hitbox, 2)
+
+    def hit(self):
+        if self.health > 0:
+            self.health -= 1
+        else:
+            self.visible = False
+        print('hit')
+
+    def move(self):
+        if self.vel > 0:  # moving right
+            if self.x + self.vel < self.path[1]:
+                self.x += self.vel
+            else:
+                self.vel *= -1
+                self.walkCount = 0
+        else:             # moving left
+            if self.x + self.vel > self.path[0]:
+                self.x += self.vel
+            else:
+                self.vel *= -1
+                self.walkCount = 0
+
+def redraw_game_window():
+    win.blit(bg, (0, 0))
+    text = font.render('Score: ' + str(score), 1, (0,0,0))
+    win.blit(text, (390, 10))
+    man.draw(win)
+    goblin.draw(win)
+    for bullet in bullets:
+        bullet.draw(win)
+    pygame.display.update()
+
+# --- main loop ---
+font = pygame.font.SysFont('comicsans', 30, True, True)
+man = player(300, 410, 64, 64)
+goblin = enemy(100, 410, 64, 64, 450)
+shootLoop = 0
+bullets = []
+run = True
+
+while run:
+    clock.tick(27)
+
+    # shoot cooldown
+    if shootLoop > 0:
+        shootLoop += 1
+        if shootLoop > 3:
+            shootLoop = 0
+
+    # events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+
+    # bullets: collisions & movement
+    for bullet in bullets[:]:  # iterate over a copy
+        hb_x, hb_y, hb_w, hb_h = goblin.hitbox
+        if (bullet.y - bullet.radius < hb_y + hb_h and
+            bullet.y + bullet.radius > hb_y and
+            bullet.x + bullet.radius > hb_x and
+            bullet.x - bullet.radius < hb_x + hb_w):
+            goblin.hit()                # CALL the method
+            score += 1
+            bullets.remove(bullet)
+            continue
+
+        bullet.x += bullet.vel          # vel already signed
+        if bullet.x < 0 or bullet.x > WIDTH:
+            bullets.remove(bullet)
+
+    # input
+    keys = pygame.key.get_pressed()
+
+    # shoot
+    if keys[pygame.K_SPACE] and shootLoop == 0:
+        facing = -1 if man.left else 1
+        if len(bullets) < 5:
+            bx = round(man.x + man.width // 2)
+            by = round(man.y + man.height // 2)
+            bullets.append(projectile(bx, by, 6, (0, 0, 0), facing))
+            shootLoop = 1  # start cooldown ONLY when we actually shoot
+
+    # move left/right with bounds
+    if keys[pygame.K_LEFT] and man.x > man.vel:
+        man.x -= man.vel
+        man.left, man.right = True, False
+        man.standing = False
+    elif keys[pygame.K_RIGHT] and man.x < WIDTH - man.width - man.vel:
+        man.x += man.vel
+        man.left, man.right = False, True
+        man.standing = False
+    else:
+        man.standing = True
+        man.walkCount = 0
+
+    # jump
+    if not man.isJump:
+        if keys[pygame.K_UP]:
+            man.isJump = True
+            man.right = man.left = False
+            man.walkCount = 0
+    else:
+        if man.jumpCount >= -10:
+            neg = 1
+            if man.jumpCount < 0:
+                neg = -1
+            man.y -= (man.jumpCount ** 2) * 0.5 * neg
+            man.jumpCount -= 1
+        else:
+            man.isJump = False
+            man.jumpCount = 10
+
+    redraw_game_window()
+
+pygame.quit()
+
